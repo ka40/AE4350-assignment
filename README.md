@@ -101,10 +101,9 @@ python main.py --env-name BreakoutNoFrameskip-v4 --num-processes 8 --num-env-ste
 python main.py --env-name BreakoutNoFrameskip-v4 --num-processes 8 --num-env-steps 20000000 --num-steps 8 --ppo-epoch 3 --lr 0.0003 --log-dir ./log_bf_lr/IAM_lr_00003-1 --IAM --flicker ; python main.py --env-name BreakoutNoFrameskip-v4 --num-processes 8 --num-env-steps 20000000 --num-steps 8 --ppo-epoch 3 --lr 0.0002 --log-dir ./log_bf_lr/IAM_lr_00002-1 --IAM --flicker ; python main.py --env-name BreakoutNoFrameskip-v4 --num-processes 8 --num-env-steps 20000000 --num-steps 8 --ppo-epoch 3 --lr 0.0001 --log-dir ./log_bf_lr/IAM_lr_00001-1 --IAM --flicker
 ```
 
-## Code implementation explanation
+## Code implementation
 
-\subsection{Architecture Implementation}
-\noindent Snippets of the code will be pasted for illustration and explanation, in order to aid reproduction. First, a base class inherited from nn.module was defined: 
+Snippets of the code will be pasted for illustration and explanation, in order to aid reproduction. First, a base class inherited from nn.module was defined: 
 
 class IAMBase(nn.Module):
     def __init__(self, recurrent, IAM, recurrent_input_size, hidden_size):
@@ -114,11 +113,8 @@ class IAMBase(nn.Module):
         self._recurrent = recurrent
         self._IAM = IAM
 
-\vspace{2em}
 
-\subsection*{Warehouse architecture}
-
-\noindent The warehouseBase inherits from the IAMBase class and when creating an object the variables recurrent and IAM can be used to switch between architectures of IAM, plain GRU and FNN.
+The warehouseBase inherits from the IAMBase class and when creating an object the variables recurrent and IAM can be used to switch between architectures of IAM, plain GRU and FNN.
 
 
 class warehouseBase(IAMBase):
@@ -167,8 +163,7 @@ class warehouseBase(IAMBase):
         self.train()
 
 
-\vspace{1em}
-\noindent The static d-set is then implemented in the following snippet, by taking the column vectors of the observation matrix that correspond to the numbers found in the static dset list.
+The static d-set is then implemented in the following snippet, by taking the column vectors of the observation matrix that correspond to the numbers found in the static dset list.
 
 
 def manual_dpatch(self, obs_input):
@@ -182,8 +177,7 @@ def manual_dpatch(self, obs_input):
     return inf_hidden
 
 
-\vspace{1em}
-\noindent Now that the modules and functions of the architecture are prepared, the flow of the architecture, or the forward function can be constructed:
+Now that the modules and functions of the architecture are prepared, the flow of the architecture, or the forward function can be constructed:
 
 
 def forward(self, inputs, rnn_hxs, masks):
@@ -211,9 +205,9 @@ def forward(self, inputs, rnn_hxs, masks):
     return hidden_critic, hidden_actor, rnn_hxs
 
 
-Recalling that in the case that the algorithm chosen is IAM, self.\textunderscore recurrent and self.is\textunderscore IAM are both True. Hence, as illustrated in \autoref{fig:IAM_d_patch}, the d-set extraction is fed into the RNN, whereas the FNN receives the whole observation matrix. Afterwards, they are concatenated and the value and policy are computed.
+Recalling that in the case that the algorithm chosen is IAM, self.\textunderscore recurrent and self.is\textunderscore IAM are both True. Hence, as illustrated in the diagram, the d-set extraction is fed into the RNN, whereas the FNN receives the whole observation matrix. Afterwards, they are concatenated and the value and policy are computed.
 
-\subsection*{Atari Breakout architecture}
+### Atari Breakout architecture
 
 In this more complex environment, the input features the algorithm should focus on change over time. Hence, an attention mechanism is used instead of a manually implemented d-set. \\
 A new class is defined for this, which also inherits from the class IAMBase. Additionally, a convolutional neural network is defined for image processing and a fully connected neural network is designed for the IAM. The entire structure of the neural network graph used in this case is also shown in a comment.
@@ -277,7 +271,7 @@ class atariBase(IAMBase):
         self.train()
 
 
-\noindent The method for the attention mechanism is the most important part. This method takes two inputs: hidden\textunderscore conv, the output from the CNN, and the hidden state of the recurrent neural network from the last time step, rnn\textunderscore hxs. The new observation matrix will first be reshaped into [batch size, width, height, channels] and the dimensions of width and height will be merged and it conserves the topology of the input. Afterwards, the weight matrix of all regions is computed from the combination of current input and past hidden state. Lastly, the weight matrix is decides which regions of the input observations should be passed into the recurrent neural network at current time step. In essence, the algorithm will learn where to look at according to the memory of the past states.
+The method for the attention mechanism is the most important part. This method takes two inputs: hidden\textunderscore conv, the output from the CNN, and the hidden state of the recurrent neural network from the last time step, rnn\textunderscore hxs. The new observation matrix will first be reshaped into [batch size, width, height, channels] and the dimensions of width and height will be merged and it conserves the topology of the input. Afterwards, the weight matrix of all regions is computed from the combination of current input and past hidden state. Lastly, the weight matrix is decides which regions of the input observations should be passed into the recurrent neural network at current time step. In essence, the algorithm will learn where to look at according to the memory of the past states.
 
 
 def attention(self, hidden_conv, rnn_hxs):
